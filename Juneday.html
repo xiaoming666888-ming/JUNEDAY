@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>JUNEDAY｜回到那五天 抢票修罗场 (中等偏难版)</title>
+  <style>
+    :root {
+      --m-blue: #0076ff;
+      --m-cyan: #53d9ff;
+      --m-pink: #ff4fa3;
+      --m-yellow: #ffe26b;
+      --m-dark: #0b1020;
+      --m-white: #ffffff;
+      --m-light-pink: #ffb6c1;
+      --m-deep-pink: #ff1493;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+    html, body {
+      margin: 0; height: 100%; width: 100%; overflow: hidden;
+      background: #ffe4e1;
+      color: #333;
+      font-family: "Courier New", Courier, monospace;
+      user-select: none; touch-action: none;
+    }
+
+    #root {
+      height: 100%; max-width: 450px; margin: 0 auto;
+      background: #fff0f5;
+      border: 15px solid #fff;
+      border-image: radial-gradient(circle, transparent 0, transparent 4px, #fff 5px) 20 repeat;
+      box-shadow: 0 0 50px rgba(255,182,193,0.5);
+      display: flex; flex-direction: column;
+      position: relative;
+    }
+
+    #header {
+      padding: 20px 15px 10px;
+      background: linear-gradient(180deg, rgba(255,105,180,0.2), transparent);
+      text-align: center;
+    }
+    .juneday-logo { font-size: 24px; font-weight: 900; color: var(--m-deep-pink); letter-spacing: 2px; text-shadow: 2px 2px 0 var(--m-light-pink); }
+    .sub-title { font-size: 10px; opacity: 0.7; margin-top: 5px; color: #555; }
+
+    #ticket-card {
+      margin: 10px 15px; background: rgba(255,255,255,0.5);
+      border-radius: 10px; padding: 12px;
+      border-left: 5px solid var(--m-deep-pink);
+      box-shadow: 0 2px 10px rgba(255,192,203,0.3);
+    }
+    .t-row { display: flex; justify-content: space-between; font-size: 11px; margin: 4px 0; color: #666; }
+    .t-title { font-size: 14px; font-weight: bold; color: var(--m-deep-pink); }
+
+    #stage { flex: 1; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+    #pixel-canvas { width: 100%; height: 100%; image-rendering: pixelated; }
+
+    #stats {
+      padding: 10px 15px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .stat-bar-wrap { background: rgba(255,255,255,0.6); border-radius: 5px; padding: 8px; border: 1px solid rgba(255,105,180,0.2); }
+    .stat-label { font-size: 10px; display: flex; justify-content: space-between; margin-bottom: 5px; color: #555; }
+    .track { height: 6px; background: #ddd; border-radius: 3px; overflow: hidden; }
+    .fill { height: 100%; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+
+    #footer { padding: 15px; background: rgba(255,255,255,0.4); border-top: 1px solid rgba(255,105,180,0.1); }
+    .btn-group { display: flex; gap: 10px; }
+    .btn {
+      flex: 1; height: 55px; border-radius: 12px; border: none;
+      font-weight: 900; font-size: 16px; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: transform 0.1s;
+    }
+    .btn:active { transform: translateY(3px); }
+    .btn-main { background: linear-gradient(180deg, var(--m-deep-pink), #ff69b4); color: #fff; box-shadow: 0 4px 0 #c71585; }
+    .btn-sub { background: #fff; color: var(--m-deep-pink); border: 1px solid var(--m-deep-pink); font-size: 12px; }
+    .btn small { font-size: 9px; opacity: 0.8; font-weight: normal; margin-top: 2px; }
+
+    #toast {
+      position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+      background: var(--m-deep-pink); color: #fff; padding: 10px 20px; border-radius: 8px;
+      font-weight: bold; z-index: 100; display: none; text-align: center;
+      box-shadow: 0 0 20px rgba(255,20,147,0.5);
+    }
+
+    #overlay {
+      position: absolute; inset: 0; background: rgba(255,240,245,0.95);
+      z-index: 500; display: none; flex-direction: column; align-items: center; justify-content: center;
+      padding: 30px; text-align: center; color: #333;
+    }
+    .res-stamp {
+      width: 150px; height: 150px; border: 5px solid; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 900;
+      margin-bottom: 20px; transform: rotate(-15deg);
+    }
+  </style>
+</head>
+<body>
+
+<div id="root">
+  <div id="header">
+    <div class="juneday-logo">JUNEDAY 5525</div>
+    <div class="sub-title">回到那五天 · 巡回演唱会（北京站模拟）</div>
+  </div>
+
+  <div id="ticket-card">
+    <div class="t-title">【六月天】回到那五天 官方入场券</div>
+    <div class="t-row"><span>日期：2026-05-25</span><span>票价：¥1555</span></div>
+    <div class="t-row"><span>座位：内场前排 (随机)</span><span>限购：1张</span></div>
+  </div>
+
+  <div id="stage">
+    <canvas id="pixel-canvas"></canvas>
+    <div id="toast"></div>
+  </div>
+
+  <div id="stats">
+    <div class="stat-bar-wrap">
+      <div class="stat-label"><span>连接进度</span><span id="v-prog">0%</span></div>
+      <div class="track"><div id="f-prog" class="fill" style="background:var(--m-deep-pink); width:0%"></div></div>
+    </div>
+    <div class="stat-bar-wrap">
+      <div class="stat-label"><span>倔强心态</span><span id="v-mind">100%</span></div>
+      <div class="track"><div id="f-mind" class="fill" style="background:var(--m-yellow); width:100%"></div></div>
+    </div>
+    <div class="stat-bar-wrap" style="grid-column: span 2;">
+      <div class="stat-label"><span>网速稳定性 (Speed)</span><span id="v-speed">正在监测...</span></div>
+      <div class="track"><div id="f-speed" class="fill" style="background:var(--m-cyan); width:60%"></div></div>
+    </div>
+  </div>
+
+  <div id="footer">
+    <div class="btn-group">
+      <button class="btn btn-sub" id="btn-refresh">刷新<br/><small>缓解堵塞</small></button>
+      <button class="btn btn-main" id="btn-submit">
+        <span>立即提交订单</span>
+        <small id="timer-txt">剩余抢票时间 02:00</small>
+      </button>
+    </div>
+  </div>
+
+  <div id="overlay">
+    <div id="res-stamp" class="res-stamp"></div>
+    <h2 id="res-title"></h2>
+    <p id="res-desc" style="opacity: 0.8; line-height: 1.6;"></p>
+    <button class="btn btn-main" style="width: 200px; height: 50px;" onclick="location.reload()">再来一次</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  
+  const state = {
+    prog: 0,
+    mind: 100,
+    speed: 60,
+    time: 120, // 改为120秒 (2分钟)
+    started: false,
+    ended: false,
+    audioCtx: null,
+    musicStarted: false,
+    tick: 0
+  };
+
+  function playNote(freq, type, start, dur, vol) {
+    const osc = state.audioCtx.createOscillator();
+    const gain = state.audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, start);
+    gain.gain.setValueAtTime(vol, start);
+    gain.gain.linearRampToValueAtTime(0, start + dur);
+    osc.connect(gain).connect(state.audioCtx.destination);
+    osc.start(start);
+    osc.stop(start + dur);
+  }
+
+  function startMusic() {
+    if (state.musicStarted || !state.audioCtx) return;
+    state.musicStarted = true;
+    let step = 0;
+    const notes = [523.25, 659.25, 783.99, 880.00, 783.99, 659.25, 523.25, 0];
+
+    setInterval(() => {
+      if (state.ended) return;
+      const now = state.audioCtx.currentTime;
+      const freq = notes[step % notes.length];
+      if (freq > 0) {
+        playNote(freq, 'sine', now, 0.2, 0.05);
+      }
+      step++;
+    }, 250);
+  }
+
+  const canvas = $("pixel-canvas");
+  const ctx = canvas.getContext("2d");
+  
+  function drawPixelStage() {
+    const w = canvas.width = canvas.offsetWidth;
+    const h = canvas.height = canvas.offsetHeight;
+    ctx.clearRect(0,0,w,h);
+    state.tick++;
+    const centerX = w / 2;
+    const centerY = h / 2;
+
+    const balls = [
+      { color: "#ff4fa3", x: centerX - 80, y: centerY - 20, eye: "oo" },
+      { color: "#ffe26b", x: centerX - 30, y: centerY + 30, eye: "- -" },
+      { color: "#53d9ff", x: centerX + 30, y: centerY - 30, eye: "bb" },
+      { color: "#77ffb0", x: centerX + 80, y: centerY + 20, eye: "^^" },
+      { color: "#ff4500", x: centerX, y: centerY - 60, eye: "xx" }
+    ];
+
+    balls.forEach((ball, index) => {
+      const floatY = Math.sin(state.tick * 0.05 + index) * 5;
+      const x = ball.x;
+      const y = ball.y + floatY;
+      ctx.fillStyle = ball.color;
+      ctx.beginPath();
+      ctx.arc(x, y, 25, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      if (ball.eye === "oo") {
+        ctx.beginPath(); ctx.arc(x - 8, y - 5, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + 8, y - 5, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#000";
+        ctx.beginPath(); ctx.arc(x - 8, y - 5, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + 8, y - 5, 2, 0, Math.PI * 2); ctx.fill();
+      } else if (ball.eye === "- -") {
+        ctx.fillRect(x - 12, y - 5, 8, 2);
+        ctx.fillRect(x + 4, y - 5, 8, 2);
+      } else if (ball.eye === "bb") {
+        ctx.fillStyle = "#000";
+        ctx.fillRect(x - 10, y - 8, 6, 6);
+        ctx.fillRect(x + 4, y - 8, 6, 6);
+      } else if (ball.eye === "^^") {
+        ctx.strokeStyle = "#000"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x - 12, y - 2); ctx.lineTo(x - 8, y - 8); ctx.lineTo(x - 4, y - 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x + 4, y - 2); ctx.lineTo(x + 8, y - 8); ctx.lineTo(x + 12, y - 2); ctx.stroke();
+      } else if (ball.eye === "xx") {
+        ctx.strokeStyle = "#000"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x - 10, y - 8); ctx.lineTo(x - 4, y - 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x - 4, y - 8); ctx.lineTo(x - 10, y - 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x + 4, y - 8); ctx.lineTo(x + 10, y - 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x + 10, y - 8); ctx.lineTo(x + 4, y - 2); ctx.stroke();
+      }
+    });
+
+    requestAnimationFrame(drawPixelStage);
+  }
+
+  function showToast(msg) {
+    const t = $("toast");
+    t.innerText = msg;
+    t.style.display = "block";
+    setTimeout(() => t.style.display = "none", 1500);
+  }
+
+  function handleAction() {
+    if (state.ended) return;
+    if (!state.started) {
+      state.started = true;
+      state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      startMusic();
+    }
+
+    if (state.prog < 80) {
+      state.prog += (Math.random() * 8 + 5); // 进度变快
+      state.speed = 50 + Math.random() * 40;
+      showToast("正在通过虚拟排队...");
+    } 
+    else if (state.prog < 95) {
+      if (Math.random() < 0.4) { // 回退概率降低至 40% (中等偏难)
+        state.prog -= (Math.random() * 6 + 2);
+        state.mind -= 8; // 心态扣除变少
+        showToast("⚠️ 验证码输入超时，回退！");
+      } else {
+        state.prog += 3;
+        showToast("正在请求分配座位...");
+      }
+    } 
+    else {
+      const roll = Math.random();
+      if (roll < 0.20) { // 成功率提升至 20%
+        state.prog = 100;
+        endGame(true);
+      } else if (roll < 0.6) { // 回退概率 40%
+        state.prog = 88; 
+        state.mind -= 15;
+        showToast("❌ 哎呀，座位刚被抢走了！");
+      } else {
+        showToast("支付环境加密中 (99%)...");
+      }
+    }
+
+    if (state.mind <= 0) endGame(false, "心态归零", "你被气得扔掉了手机。");
+    updateUI();
+  }
+
+  function updateUI() {
+    $("f-prog").style.width = Math.min(100, state.prog) + "%";
+    $("v-prog").innerText = Math.floor(state.prog) + "%";
+    $("f-mind").style.width = state.mind + "%";
+    $("v-mind").innerText = state.mind + "%";
+    $("f-speed").style.width = state.speed + "%";
+    $("v-speed").innerText = state.speed > 70 ? "极速连接" : (state.speed > 40 ? "波动中" : "严重拥堵");
+    
+    const m = Math.floor(state.time / 60);
+    const s = state.time % 60;
+    $("timer-txt").innerText = `剩余抢票时间 ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+
+  function endGame(win, title, desc) {
+    state.ended = true;
+    $("overlay").style.display = "flex";
+    const stamp = $("res-stamp");
+    const now = state.audioCtx.currentTime;
+    if (win) {
+      stamp.innerText = "SUCCESS";
+      stamp.style.color = "var(--m-deep-pink)";
+      stamp.style.borderColor = "var(--m-deep-pink)";
+      $("res-title").innerText = "天选之子！";
+      $("res-desc").innerText = "抢到了！回到那五天，我们在鸟巢见！";
+      playNote(880, 'sine', now, 0.5, 0.1);
+    } else {
+      stamp.innerText = "FAILED";
+      stamp.style.color = "#555";
+      stamp.style.borderColor = "#555";
+      $("res-title").innerText = title || "遗憾出局";
+      $("res-desc").innerText = desc || "票已售罄。既然没抢到，那就听首《突然好想你》吧。";
+      playNote(440, 'sine', now, 0.5, 0.1);
+    }
+  }
+
+  $("btn-submit").onclick = handleAction;
+  $("btn-refresh").onclick = () => {
+    if (state.ended) return;
+    state.speed = 80 + Math.random() * 20;
+    state.mind = Math.min(100, state.mind + 5);
+    showToast("刷新成功，网速恢复！");
+    updateUI();
+  };
+
+  setInterval(() => {
+    if (state.started && !state.ended) {
+      state.time--;
+      if (state.time <= 0) endGame(false, "时间耗尽", "入场券已被锁死。");
+      updateUI();
+    }
+  }, 1000);
+
+  drawPixelStage();
+  updateUI();
+})();
+</script>
+</body>
+</html>
